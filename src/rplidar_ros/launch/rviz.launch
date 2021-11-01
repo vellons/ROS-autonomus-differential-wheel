@@ -1,0 +1,6 @@
+!--
+  Used for visualising rplidar in action.
+ -->
+<launch>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rplidar_ros)/rviz/rplidar.rviz" />
+</launch>
