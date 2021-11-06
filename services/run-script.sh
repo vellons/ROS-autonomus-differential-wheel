@@ -1,3 +1,2 @@
 #!/bin/bash
-# roscore
-roslaunch rosserial_python serial_node.launch
+roslaunch autonomus_differential_wheel robot.launch

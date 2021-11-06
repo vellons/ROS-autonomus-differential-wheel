@@ -94,15 +94,12 @@ int map_pwm(float x, float out_min, float out_max) {
 }
 
 void cmd_vel_callback(const geometry_msgs::Twist &twist_msg) {
-  digitalWrite(LED_BUILTIN, HIGH - digitalRead(LED_BUILTIN)); // Blink led
-
   // Map values at [-1 .. 1]
   x = max(min(twist_msg.linear.x, 1.0f), -1.0f);
   z = max(min(twist_msg.angular.z, 1.0f), -1.0f);
 
-  // More power on linear X
-  l = (x * 1.3 - z) / 2;
-  r = (x * 1.3 + z) / 2;
+  l = (x - z) / 2;
+  r = (x + z) / 2;
 
   speed_SX = map_pwm(fabs(l), SPEED_MIN_SX, SPEED_MAX_SX);
   speed_DX = map_pwm(fabs(r), SPEED_MIN_DX, SPEED_MAX_DX);
@@ -138,7 +135,6 @@ ros::Subscriber<geometry_msgs::Twist> subCmdVel("cmd_vel", &cmd_vel_callback);
 
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PIN_DIRECTION_SX, OUTPUT);
   pinMode(PIN_BRAKE_SX, OUTPUT);
   pinMode(PIN_SPEED_SX, OUTPUT);
@@ -161,7 +157,7 @@ void setup() {
     while (1);
   }
   delay(500);
-  bno.getEvent(&event);
+  read_imu();
   delay(500);
   read_imu();
   busIni = bus;

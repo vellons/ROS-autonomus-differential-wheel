@@ -49,8 +49,6 @@ int map_pwm(float x, float out_min, float out_max) {
 }
 
 void cmd_vel_callback(const geometry_msgs::Twist &twist_msg) {
-  digitalWrite(LED_BUILTIN, HIGH - digitalRead(LED_BUILTIN)); // Blink led
-
   // Map values at [-1 .. 1]
   x = max(min(twist_msg.linear.x, 1.0f), -1.0f);
   z = max(min(twist_msg.angular.z, 1.0f), -1.0f);

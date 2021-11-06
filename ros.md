@@ -79,77 +79,94 @@ docker run --network host --privileged -v "/dev/serial0:/dev/serialArduino" -v "
 
 
 
-## autonomus_differential_wheel
-Installa docker e docker-compose sul tuo raspberry 64 bit
+## Autonomus differential wheel
+Installa **docker** e **docker-compose** sul tuo raspberry **64 bit**
 Guida: https://dev.to/elalemanyo/how-to-install-docker-and-docker-compose-on-raspberry-pi-1mo
+
 Login ed entra nella cartella del progetto. 
+
 Tutti i dispositivi (Arduino e lidar) devono essere staccati
 
 Verifica che nel file docker-compose gli indirizzi IP sono corretti
 
-Arduino si connette solitamente:  /dev/serial0 o 1
+Arduino si connette solitamente:  /dev/serial0 o 1 Se con usb /dev/ttyACM0
+
 Il lidar si connette solitamente: /dev/ttyUSB0
+
 Attacca Arduino e aspetta 20 secondi
 
 Tieni il lidar staccato per verificare che la porta non esiste
+```shell
 $ ls -l /dev | grep ttyUSB
+```
 
 Connetti il lidar per verificare la presenza
+```shell
 $ ls -l /dev | grep ttyUSB
 $ sudo chmod 666 /dev/ttyUSB0
 $ ls -l /dev | grep ttyUSB
+```
 
 Per testare la comunicazione con il lidar esegui:
+```shell
 $ cat /dev/ttyUSB0
+```
 se il lidar si ferma la comunicazione avviene correttamente
 
+Controlla che nel file docker-compose.yml le porte e gli indirizzi IP sono corretti.
 
-Entra nel container (parte automaticamente serial_node)
+Entra nel container (parte automaticamente serial_node e rplidar)
+```shell
 $ docker-compose run ros-run
+```
 Dovresti vedere il warn "Arduino connected" dopo 20 secondi circa (altimenti reset Arduino)
 
-Apri un nuovo terminale per collegarti al container
+Apri un nuovo terminale per collegarti al container. 
 Utilizza questo comando per vedere il nome del container avviato
+```shell
 $ docker ps
-
-$ docker exec -it autonomus_differential_wheel_ros-run_run_258775d555c1 /bin/bash
+$ docker exec -it autonomus_differential_wheel_ros-run_run_258775d555c1 bash
 $ source devel/setup.bash
+```
 
-Per testare la comunicazione con il lidar dentro il container esegui:
-$ cat /dev/ttyUSB0
-se il lidar si ferma la comunicazione avviene correttamente
 
 Visualizza i topic di ROS
+```shell
 $ rostopic list
+```
 
 Avvia il nodo per gestire il lidar
+```shell
 $ roslaunch rplidar_ros rplidar.launch
+```
 Per mezzo secondo il lidar si ferma. 
 Le letture del lidar sono pubblicate nel topic /scan
 
 Avvia il tool per comandare il robot
+```shell
 $ rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+```
 Puoi visualizzare i comandi inviato aprendo un nuovo terminale nel container
+```shell
 $ rostopic echo cmd_vel
-
+```
 
 Su un desktop ubuntu:
 Devi compilare hector-slam/
-rimuovi il file CATKIN IGNORE?
+rimuovi il file CATKIN IGNORE!
+```shell
 $ catkin_make
 $ source devel/setup.bash
 $ export ROS_IP=ip-ubuntu
 $ export ROS_MASTER_URI=http://ip-raspi:11311
+```
 
 Testa la comunicazione con il raspberry
+```shell
 $ rostopic list
+```
 
 Avvia RVIZ
+```shell
 $ roslaunch hector_slam_launch tutorial.launch
-
-
-
-
-
-
-
+```

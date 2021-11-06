@@ -1,6 +1,8 @@
 RPLIDAR ROS package
 =====================================================================
 
+GitHub project: https://github.com/robopeak/rplidar_ros
+
 ROS node and test application for RPLIDAR
 
 Visit following Website for more details about RPLIDAR:

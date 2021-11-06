@@ -2,25 +2,22 @@
 #define READ_TIMEOUT 100
 
 int i = 0; // Indice per i cicli/calcoli temporanei
-char dato = 0; // Per letture su seriale
-char buffer_length = 0; // Numero di byte della comunicazione seriale
-char buffer[128]; // Buffer la comunicazione ricevuta da seriale
+byte dato = 0; // Per letture su seriale
+byte buffer_length = 0; // Numero di byte della comunicazione seriale
+byte buffer[128]; // Buffer la comunicazione ricevuta da seriale
+unsigned int checksum = 0; // Variabile per calcolare il checksum
+bool checksum_correct = false; // Stato ultimo checksum
 unsigned long int tempo = 0;
 unsigned long int tempo_attesa = 0;
 
 void wait_for_bytes(int num_bytes, unsigned long timeout) {
-  Serial.flush();
-  delay(10);  // Concedo del tempo per fare arrivare il dato nel buffer
-  //tempo_attesa = millis();
-  //while ((Serial.available() < num_bytes) && (millis() - tempo_attesa < timeout)) {}
+  tempo_attesa = millis();
+  while ((Serial.available() < num_bytes) && (millis() - tempo_attesa < timeout)) {}
 }
 
 void execute() {
-  // Esecuzione dei comandi nel buffer
-  // buffer[i] = id del pin
-  // buffer[i+1] = comando da eseguire
   for (i = 0; i < buffer_length; i += 2) {
-    // Esecuzion comando
+    // Execution
     if (buffer[i + 1] > 0) {
       digitalWrite(LED_BUILTIN, HIGH); //Accendo il led
     } else if (buffer[i + 1] == 0) {
@@ -33,24 +30,37 @@ void serial_parse() {
   // Funzione per prelavare il payload della comunicazione dalla seriale e salvarlo nel buffer
   wait_for_bytes(1, READ_TIMEOUT);
   buffer_length = Serial.read(); // Il primo carattere della comunicazione è la quantità di byte
-  Serial.write(buffer_length); // ACK lunghezza buffer
+  checksum = buffer_length;
+  Serial.write(buffer_length); // Conferma lunghezza buffer
+
   for (i = 0; i < buffer_length; i++) {
     wait_for_bytes(1, READ_TIMEOUT);
     buffer[i] = Serial.read(); // Salvo tutte le informazioni utili
-    Serial.write(buffer[i]); // ACK dato
+    Serial.write(buffer[i]); // Conferma dato
+    checksum = (checksum + buffer[i]) % 256; // CHECKSUM
   }
+
+  // Check checksum
+  checksum_correct = false;
+  wait_for_bytes(1, READ_TIMEOUT);
+  dato = Serial.read();
+  Serial.write(checksum);
+  if (dato == checksum) {
+    checksum_correct = true;
+  }
+
+  // Chiusura della comunicazione
   wait_for_bytes(1, READ_TIMEOUT);
   dato = Serial.read();
   if (dato == 251) { // Carattere di fine comunicazione
     // Comunicazione non compromessa, il carattere di terminazione è corretto
-    Serial.write(251); // ACK fine comunicazione
-    execute();
+    Serial.write(251); // Conferma fine comunicazione
+    if (checksum_correct) {
+      // Se il checksum è verificato eseguo il messaggio
+      execute();
+    }
   } else {
     // Comunicazione corrotta, scarto i dati nel buffer
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(100);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(100);
     digitalWrite(LED_BUILTIN, HIGH);
     delay(100);
     digitalWrite(LED_BUILTIN, LOW);
@@ -71,7 +81,6 @@ void serial_read() {
   // per prendere il payload della comunicazione
   wait_for_bytes(1, READ_TIMEOUT);
   dato = Serial.read();
-  // Serial.write(dato); // TODO: remove
   if (dato == 254) {
     Serial.write(254);
     wait_for_bytes(1, READ_TIMEOUT);
@@ -85,6 +94,8 @@ void serial_read() {
         serial_parse();
       }
     }
+  } else if (dato == 250) { // Ping only
+    Serial.write(250);
   }
 }
 
@@ -107,7 +118,7 @@ void setup() {
 
 
 void loop() {
-  if (Serial.available()) {
+  if (Serial.available() > 0) {
     serial_read();
   }
 }
